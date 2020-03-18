@@ -14,6 +14,17 @@ Choose between showshopper (cannot login/website down/Juypter notebook doesnt ru
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+**General Development node**
+1. Environment (You can capture URL- sandbox or production)
+2.	Time (possibly include screenshot of desktop time)
+
+**Compute/Edge node**
+1. Environment (You can capture URL- sandbox or production)
+2.	Host Name
+3.	Error message
+4. Time
+
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
