@@ -28,6 +28,7 @@ import io
 from openvino.inference_engine import IENetwork, IECore
 from qarpo.demoutils import *
 import cv2
+import applicationMetricWriter
 
 
 
@@ -188,7 +189,8 @@ def main():
                 if not byte == b"":
                     deserialized_bytes = np.frombuffer(byte, dtype=np.uint8)
                     in_frame = np.reshape(deserialized_bytes, newshape=(n, c, h, w))
-                    exec_net.start_async(request_id=current_inference, inputs={input_blob: in_frame})
+                    inf_time = time.time()
+                    exec_net.start_async(request_id=current_inference, inputs={input_blob: in_frame}) 
                 
                 # Retrieve the output of an earlier inference request
                 if previous_inference >= 0:
@@ -196,6 +198,8 @@ def main():
                     if status is not 0:
                         raise Exception("Infer request not completed successfully")
                     # Parse inference results
+                    det_time = time.time() - inf_time
+                    applicationMetricWriter.send_inference_time(det_time*1000)                      
                     res = infer_requests[previous_inference].outputs[out_blob]
                     processBoxes(frame_count, res, labels_map, args.prob_threshold, width, height, result_file)
                     frame_count += 1
@@ -214,17 +218,19 @@ def main():
                     previous_inference = 0
 
         # End while loop
-        total_time = time.time() - infer_time_start
+        total_time = time.time() - infer_time_start 
         with open(os.path.join(args.output_dir, 'stats_{}.txt'.format(job_id)), 'w') as f:
                 f.write('{:.3g} \n'.format(total_time))
                 f.write('{} \n'.format(frame_count))
 
         result_file.close()
-
+    
+    
     finally:
         log.info("Processing done...")
         del exec_net
-
+        
+    applicationMetricWriter.send_application_metrics(model_xml, args.device)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

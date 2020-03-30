@@ -13,6 +13,7 @@ packages_directory=get_python_lib()
 import matplotlib.pyplot as plt
 from qarpo.demoutils import progressUpdate
 from argparser import args
+import applicationMetricWriter
 
 if args.keras_api:
     import keras as K
@@ -303,11 +304,15 @@ for idx in indicies_validation:
 
     input_data_transposed=input_data[idx:(idx+batch_size)].transpose(0,3,1,2)
     start_time = time.time()
+    inf_start = time.time()
     res = exec_net.infer(inputs={input_blob:input_data_transposed[:,:n_channels]})
     # Save the predictions to array
     predictions = res[out_blob]
     time_elapsed = time.time()-start_time
     infer_time += time_elapsed
+    det_time = time.time() - inf_start
+    applicationMetricWriter.send_inference_time(det_time*1000)
+    
     plotDiceScore(idx,input_data_transposed,label_data[[idx]].transpose(0,3,1,2),predictions,True, round(time_elapsed*1000))
     progressUpdate(progress_file_path, time.time()-process_time_start, val_id, len(indicies_validation)) 
     val_id += 1
@@ -318,5 +323,6 @@ with open(os.path.join(png_directory, 'stats.txt'), 'w') as f:
                 f.write(str(round(infer_time, 4))+'\n')
                 f.write(str(val_id)+'\n')
                 f.write("Frames processed per second = {}".format(round(val_id/infer_time)))
-
+                
+applicationMetricWriter.send_application_metrics(model_xml, args.device)
 

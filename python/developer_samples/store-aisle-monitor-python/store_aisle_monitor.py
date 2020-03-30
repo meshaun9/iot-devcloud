@@ -31,6 +31,7 @@ import numpy as np
 from inference import Network
 from pathlib import Path
 from qarpo.demoutils import *
+import applicationMetricWriter
 
 # Multiplication factor to compute time interval for uploading snapshots to the cloud
 MULTIPLICATION_FACTOR = 5
@@ -182,6 +183,8 @@ def main():
         # Start asynchronous inference for specified request.
         inf_start = time.time()
         infer_network.exec_net(0, in_frame)
+        det_time = time.time() - inf_start
+        applicationMetricWriter.send_inference_time(det_time*1000)   
         # Wait for the result
         infer_network.wait(0)
         det_time = time.time() - inf_start
@@ -226,7 +229,8 @@ def main():
     cap.release()
     infer_network.clean()
 
-
+    applicationMetricWriter.send_application_metrics(args.model, args.device)
+    
 if __name__ == '__main__':
     sys.exit(main() or 0)
 

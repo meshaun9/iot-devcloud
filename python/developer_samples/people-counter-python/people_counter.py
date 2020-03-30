@@ -34,6 +34,7 @@ from inference import Network
 from pathlib import Path
 sys.path.insert(0, str(Path().resolve().parent.parent))
 from qarpo.demoutils import *
+import applicationMetricWriter
 
 def build_argparser():
     """
@@ -172,9 +173,10 @@ def main():
         # Start asynchronous inference for specified request.
         inf_start = time.time()
         infer_network.exec_net(cur_request_id, image)
+        det_time = time.time() - inf_start
+        applicationMetricWriter.send_inference_time(det_time*1000)
         # Wait for the result
         if infer_network.wait(cur_request_id) == 0:
-            det_time = time.time() - inf_start
             # Results of the output layer of the network
             result = infer_network.get_output(cur_request_id)
             if args.perf_counts:
@@ -204,7 +206,8 @@ def main():
             f.write(str(frame_count)+'\n')
     cap.release()
     infer_network.clean()
-
+    applicationMetricWriter.send_application_metrics(args.model, args.device)                                                    
+    
 
 if __name__ == '__main__':
     main()

@@ -16,6 +16,7 @@ import time
 from utils import load_img, img_to_array, resize_image
 from pathlib import Path
 from qarpo.demoutils import simpleProgressUpdate
+import applicationMetricWriter
 
 
 def float16_conversion(n):
@@ -118,8 +119,10 @@ def main():
         [image1,image]= read_image(file)
         t0 = time.time()
         for i in range(args.number_iter):
+            inf_time = time.time()
             res = exec_net.infer(inputs={input_blob: image1})
-            #infer_time.append((time()-t0)*1000)
+            det_time = time.time() - inf_time
+            applicationMetricWriter.send_inference_time(det_time*1000)   
         infer_time = (time.time() - t0)*1000
         log.info("Average running time of one iteration: {} ms".format(np.average(np.asarray(infer_time))))
         if args.perf_counts:
@@ -167,6 +170,7 @@ def main():
         simpleProgressUpdate(progress_file_path,index_f* avg_time , (len(files)-1)* avg_time) 
     f1.write(str(np.average(np.asarray(time_images)))+'\n')
     f1.write(str(1))
+    applicationMetricWriter.send_application_metrics(model_xml, device)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)
