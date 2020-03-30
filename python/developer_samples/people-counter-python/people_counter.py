@@ -173,11 +173,13 @@ def main():
         # Start asynchronous inference for specified request.
         inf_start = time.time()
         infer_network.exec_net(cur_request_id, image)
-        det_time = time.time() - inf_start
-        applicationMetricWriter.send_inference_time(det_time*1000)
+        
         # Wait for the result
         if infer_network.wait(cur_request_id) == 0:
             # Results of the output layer of the network
+            det_time = time.time() - inf_start
+            applicationMetricWriter.send_inference_time(det_time*1000)
+            
             result = infer_network.get_output(cur_request_id)
             if args.perf_counts:
                 perf_count = infer_network.performance_counter(cur_request_id)
