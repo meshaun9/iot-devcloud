@@ -42,6 +42,7 @@ import math
 from openvino.inference_engine import IENetwork, IECore
 from pathlib import Path
 from qarpo.demoutils import progressUpdate
+import applicationMetricWriter
 
 
 
@@ -441,6 +442,7 @@ def main():
                  in_frame = in_frame.reshape((n, c, h, w))
 
                  infer_start = datetime.datetime.now()
+                 inf_start = time.time()
                  if is_async_mode:
                      exec_net.start_async(request_id=next_request_id, inputs={input_blob: in_frame})
                      # Async enabled and only one video capture
@@ -458,6 +460,8 @@ def main():
                  if exec_net.requests[cur_request_id].wait(-1) == 0:
                      infer_end = datetime.datetime.now()
                      infer_duration = infer_end - infer_start
+                     det_time = time.time() - inf_start
+                     applicationMetricWriter.send_inference_time(det_time*1000)                        
                      current_count = 0
                      # Parse detection results of the current request
                      res = exec_net.requests[cur_request_id].outputs[out_blob]
@@ -592,6 +596,7 @@ def main():
 
         if no_more_data:
             break
+    applicationMetricWriter.send_application_metrics(model_xml, TARGET_DEVICE)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

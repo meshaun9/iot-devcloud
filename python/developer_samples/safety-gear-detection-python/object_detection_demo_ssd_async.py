@@ -27,6 +27,8 @@ import io
 from openvino.inference_engine import IENetwork, IEPlugin
 from pathlib import Path
 from qarpo.demoutils import progressUpdate
+import applicationMetricWriter
+
 
 def build_argparser():
     parser = ArgumentParser()
@@ -193,7 +195,10 @@ def main():
                 if not byte == b"":
                     deserialized_bytes = np.frombuffer(byte, dtype=np.uint8)
                     in_frame = np.reshape(deserialized_bytes, newshape=(n, c, h, w))
+                    inf_time = time.time()
                     exec_net.start_async(request_id=current_inference, inputs={input_blob: in_frame})
+                    det_time = time.time() - inf_time
+                    applicationMetricWriter.send_inference_time(det_time*1000)         
                 
                 # Retrieve the output of an earlier inference request
                 if previous_inference >= 0:
@@ -220,16 +225,20 @@ def main():
 
         # End while loop
         total_time = time.time() - infer_time_start
+        
         with open(os.path.join(args.output_dir, 'stats_{}.txt'.format(job_id)), 'w') as f:
                 f.write('{:.3g} \n'.format(total_time))
                 f.write('{} \n'.format(frame_count))
 
         result_file.close()
-
+    
+    
     finally:
         log.info("Processing done...")
         del exec_net
         del plugin
+        
+    applicationMetricWriter.send_application_metrics(model_xml, args.device)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

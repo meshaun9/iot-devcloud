@@ -10,6 +10,7 @@ import logging as log
 from time import time
 from openvino.inference_engine import IENetwork, IECore
 from qarpo.demoutils import progressUpdate
+import applicationMetricWriter
 
 def main():
     # Construct the argument parser and parse the arguments
@@ -83,6 +84,9 @@ def main():
         start_time = time()
         res = exec_net.infer(inputs={"image" : np.expand_dims(np.transpose(rgb_image/255.0, [2, 0, 1]), 0)}) 
         log.info("OpenVINO took {} msec for inference on frame {}".format(1000.0*(time() - start_time), number))
+        det_time = time() - start_time
+        applicationMetricWriter.send_inference_time(det_time*1000) 
+        
 
         mask_frame = np.zeros((1024,1280,3), dtype=np.uint8)
         frame = res["toolmask/mul_"]
@@ -106,6 +110,8 @@ def main():
         f.write(str(total_frames)+'\n')
 
     log.info("The output video is {}".format(output + 'output_' + str(job_id) + '.mp4'))
+    model_xml = './models/ov/' + fp_model + '/surgical_tools_parts.xml'
+    applicationMetricWriter.send_application_metrics(model_xml, device_type)
 
 if __name__ == '__main__':
     sys.exit(main() or 0)

@@ -28,6 +28,7 @@ from local_utils.config_utils import load_config
 import os.path as ops
 from easydict import EasyDict
 from qarpo.demoutils import *
+import applicationMetricWriter
 
 def build_argparser():
     parser = ArgumentParser()
@@ -116,12 +117,16 @@ def main():
     print(args.number_iter)
     for i in range(args.number_iter):
         #t0 = time()
+        inf_time = time.time()
         res = exec_net.infer(inputs={input_blob: images})
+        det_time = time.time() - inf_time
+        applicationMetricWriter.send_inference_time(det_time*1000)
         if i%10 == 0 or i==args.number_iter-1: 
             progressUpdate(infer_file, time.time()-t0, i+1, args.number_iter) 
 
         #infer_time.append((time()-t0)*1000)
     t1 = (time.time() - t0)*1000
+    
     log.info("Average running time of one iteration: {} ms".format(np.average(np.asarray(infer_time))))
     if args.perf_counts:
         perf_counts = exec_net.requests[0].get_perf_counts()
@@ -152,6 +157,8 @@ def main():
     with open(os.path.join(args.output_dir, 'stats.txt'), 'w') as f:
                 f.write(str(avg_time)+'\n')
                 f.write(str(args.number_iter)+'\n')
+                
+    applicationMetricWriter.send_application_metrics(model_xml, args.device)
 
 
 if __name__ == '__main__':

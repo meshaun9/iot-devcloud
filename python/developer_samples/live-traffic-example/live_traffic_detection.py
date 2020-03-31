@@ -27,6 +27,7 @@ import io
 from openvino.inference_engine import IENetwork, IECore
 from pathlib import Path
 from qarpo import progressUpdate
+import applicationMetricWriter
 
 def build_argparser():
   parser = ArgumentParser()
@@ -202,6 +203,7 @@ def main():
         if exec_net.requests[cur_request_id].wait(-1) == 0:
           inf_end = time.time()
           det_time = inf_end - inf_start
+          applicationMetricWriter.send_inference_time(det_time*1000)
           #Parse detection results of the current request
           res = exec_net.requests[cur_request_id].outputs[out_blob]
           processBoxes(frame_count, res, labels_map, args.prob_threshold, frame, result_list, det_time)
@@ -237,6 +239,7 @@ def main():
     post_process_t = time.time()
     postProcess(result_list, int(initial_w), int(initial_h), labels_map, o_video, is_async_mode, ren_progress_file_path)
     log.info("Post processing time: {0} sec" .format(time.time()-post_process_t))
+    applicationMetricWriter.send_application_metrics(model_xml, args.device)
 
   finally:
     del exec_net

@@ -33,6 +33,7 @@ from inference import Network
 from pathlib import Path
 import logging as log
 from qarpo.demoutils import *
+import applicationMetricWriter
 
 # shoppingInfo contains statistics for the shopping information
 MyStruct = namedtuple("shoppingInfo", "shopper, looker")
@@ -178,10 +179,11 @@ def main():
         # Start asynchronous inference for specified request
         inf_start_fd = time.time()
         infer_network.exec_net(0, in_frame_fd)
+        det_time_fd = time.time() - inf_start_fd
+        applicationMetricWriter.send_inference_time(det_time_fd*1000)
+        
         # Wait for the result
         infer_network.wait(0)
-        det_time_fd = time.time() - inf_start_fd
-        
         # Results of the output layer of the network
         res = infer_network.get_output(0)
 
@@ -241,7 +243,7 @@ def main():
     infer_network.clean()
     infer_network_pose.clean()
     cap.release()
-
+    applicationMetricWriter.send_application_metrics(args.model, args.device)
 
 if __name__ == '__main__':
     main()

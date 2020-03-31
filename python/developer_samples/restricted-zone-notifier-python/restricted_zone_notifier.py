@@ -37,6 +37,7 @@ from argparse import ArgumentParser
 from inference import Network
 from pathlib import Path
 from qarpo.demoutils import *
+import applicationMetricWriter
 
 # Assemblyinfo contains information about assembly area
 MyStruct = namedtuple("assemblyinfo", "safe")
@@ -214,9 +215,10 @@ def main():
         # Start asynchronous inference for specified request.
         inf_start = time.time()
         infer_network.exec_net(0, in_frame_fd)
-        # Wait for the result
-        infer_network.wait(0)
         det_time = time.time() - inf_start
+        applicationMetricWriter.send_inference_time(det_time*1000)
+        # Wait for the result
+        infer_network.wait(0) 
         # Results of the output layer of the network
         res = infer_network.get_output(0)
         # Parse SSD output
@@ -252,10 +254,10 @@ def main():
             f.write(str(round(total_time, 1))+'\n')
             f.write(str(frame_count)+'\n')
 
-
     infer_network.clean()
     cap.release()
     cv2.destroyAllWindows()
+    applicationMetricWriter.send_application_metrics(args.model, args.device)
 
 if __name__ == '__main__':
     main()

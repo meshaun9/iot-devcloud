@@ -35,6 +35,8 @@ import pathlib
 from pathlib import Path
 from inference import Network
 from qarpo.demoutils import *
+import applicationMetricWriter
+
 
 # CONSTANTS
 CONF_FILE = "./resources/conf.txt"
@@ -352,6 +354,7 @@ def intruder_detector():
             # Wait for the result
             if infer_network.wait(0) == 0:
                 inf_time = time.time() - inf_start
+                applicationMetricWriter.send_inference_time(inf_time*1000)
                 # Results of the output layer of the network
                 res = infer_network.get_output(0)
                 for obj in res[0][0]:
@@ -483,4 +486,4 @@ if __name__ == '__main__':
         print("Unknown error occurred!")
 
     clean_up()
-   
+    applicationMetricWriter.send_application_metrics(model_xml, TARGET_DEVICE)
